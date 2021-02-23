@@ -65,7 +65,7 @@ class SecurityConfig : WebSecurityConfigurerAdapter() {
 
 
         http.cors().and().authorizeRequests()
-            .mvcMatchers("/api/v1/issues/**").hasAnyAuthority("PERMISSIONS_eventing:agent")
+            .mvcMatchers("/api/v1/agent-events/issues/**").hasAnyAuthority("PERMISSIONS_eventing:agent")
             .anyRequest().authenticated()
 
 

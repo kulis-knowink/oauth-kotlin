@@ -20,7 +20,7 @@ import javax.ws.rs.Path
 
 @RestController
 @RequestMapping(
-    path=["api/v1/issues"],
+    path=["api/v1/agent-events/issue"],
     produces = [MediaType.APPLICATION_JSON_VALUE]
 )
 class AgentEvents {
