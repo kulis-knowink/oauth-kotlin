@@ -51,7 +51,7 @@ class APIController {
         return Message("All good. You can see this because you are Authenticated with a Token granted the 'read:messages' scope")
     }
 
-    @GetMapping("/public/stream-sse-mvc")
+    @GetMapping("/public/stream-sse-mvc", produces = [MediaType.TEXT_EVENT_STREAM_VALUE])
     fun streamSseMvc(): SseEmitter? {
         val emitter = SseEmitter()
         val sseMvcExecutor = Executors.newSingleThreadExecutor()
