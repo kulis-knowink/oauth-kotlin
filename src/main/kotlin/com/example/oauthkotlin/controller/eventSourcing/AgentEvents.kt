@@ -5,9 +5,6 @@ import com.example.oauthkotlin.model.Message
 import com.fasterxml.jackson.databind.ser.std.StringSerializer
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties.Producer
 import org.springframework.http.MediaType
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
 import java.util.*
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.clients.admin.NewTopic
@@ -17,12 +14,13 @@ import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.clients.producer.RecordMetadata
 import org.apache.kafka.common.errors.TopicExistsException
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.*
+import javax.ws.rs.Path
 
 
 @RestController
 @RequestMapping(
-    path=["api/v1/agent-events"],
+    path=["api/v1/issues"],
     produces = [MediaType.APPLICATION_JSON_VALUE]
 )
 class AgentEvents {
@@ -63,43 +61,47 @@ class AgentEvents {
         return KafkaProducer<String, String>(props)
     }
 
+    private fun send(issue: Issue, event: String) {
+        val producer = createProducer()
+        producer.send(ProducerRecord(TOPIC, issue.id.toString(), event))
+    }
+
     @PostMapping("/new-issue-event")
     fun newIssueEvent(): Issue {
-        var producer = createProducer()
-        var issue = Issue(id = id, status = "open")
-        producer.send(ProducerRecord(TOPIC, issue.id.toString(), "issue-created"))
+        val issue = Issue(id = id, status = "open")
+        send(issue, "issue-opened")
         id++
         return issue
     }
 
-    @PostMapping("/issue-resolved-event")
-    fun issueResolvedEvent(@RequestBody issue: Issue): Issue {
-        var producer = createProducer()
+    @PostMapping("/{id}/issue-resolved-event")
+    fun issueResolvedEvent(@RequestBody issue: Issue, @PathVariable("id") id: Number): Issue {
+        assert(issue.id == id)
         issue.status = "resolved"
-        producer.send(ProducerRecord(TOPIC, issue.id.toString(), "issue-resolved"))
+        send(issue, "issue-resolved")
         return issue
     }
 
-    @PostMapping("/issue-prioritized-event")
-    fun prioritizedEvent(@RequestBody issue: Issue): Issue {
-        var producer = createProducer()
+    @PostMapping("/{id}/issue-prioritized-event")
+    fun prioritizedEvent(@RequestBody issue: Issue, @PathVariable("id") id: Number): Issue {
+        assert(issue.id == id)
         issue.priority = "urgent"
-        producer.send(ProducerRecord(TOPIC, issue.id.toString(), "issue-prioritized"))
+        send(issue, "issue-prioritized")
         return issue
     }
 
-    @PostMapping("/rover-assigned-event")
-    fun roverAssignedEvent(@RequestBody issue: Issue): Issue {
-        val producer = createProducer()
+    @PostMapping("/{id}/rover-assigned-event")
+    fun roverAssignedEvent(@RequestBody issue: Issue, @PathVariable("id") id: Number): Issue {
+        assert(issue.id == id)
         issue.assignedRover = "foobar"
-        producer.send(ProducerRecord(TOPIC, issue.id.toString(), "rover-assigned"))
+        send(issue, "rover-assigned")
         return issue
     }
 
-    @PostMapping("/caller-subscribed-event")
-    fun callerSubscribedEvent(@RequestBody issue: Issue): Issue {
-        val producer = createProducer()
-        producer.send(ProducerRecord(TOPIC, issue.id.toString(), "caller-subscribed"))
+    @PostMapping("/{id}/caller-subscribed-event")
+    fun callerSubscribedEvent(@RequestBody issue: Issue, @PathVariable("id") id: Number): Issue {
+        assert(issue.id == id)
+        send(issue, "caller-subscribed")
         return issue
     }
 }

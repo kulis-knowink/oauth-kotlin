@@ -8,6 +8,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter
 
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import java.lang.Exception
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator
 
@@ -20,6 +21,12 @@ import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource
 import org.springframework.web.cors.reactive.CorsWebFilter
 import java.util.*
 import org.springframework.web.servlet.config.annotation.CorsRegistry
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter
+
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter
+
+
+
 
 
 
@@ -44,13 +51,34 @@ class SecurityConfig : WebSecurityConfigurerAdapter() {
         return jwtDecoder
     }
 
+    private fun jwtAuthenticationConverter(): JwtAuthenticationConverter? {
+        val jwtGrantedAuthoritiesConverter = JwtGrantedAuthoritiesConverter()
+        jwtGrantedAuthoritiesConverter.setAuthoritiesClaimName("permissions")
+        jwtGrantedAuthoritiesConverter.setAuthorityPrefix("PERMISSIONS_")
+        val jwtAuthenticationConverter = JwtAuthenticationConverter()
+        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(jwtGrantedAuthoritiesConverter)
+        return jwtAuthenticationConverter
+    }
 
     @Throws(Exception::class)
     public override fun configure(http: HttpSecurity) {
+
+
         http.cors().and().authorizeRequests()
-            .mvcMatchers("/api/public").permitAll()
-            .mvcMatchers("/api/private").authenticated()
-            .mvcMatchers("/api/private-scoped").hasAuthority("SCOPE_read:messages")
-            .and().oauth2ResourceServer().jwt();
+            .mvcMatchers("/api/v1/issues/**").hasAnyAuthority("PERMISSIONS_eventing:agent")
+            .anyRequest().authenticated()
+
+
+
+
+//
+//            .mvcMatchers("/api/public").permitAll()
+//            .mvcMatchers("/api/private")
+//            .mvcMatchers("/api/v1/issues").hasAnyAuthority("SCOPE_ROEAD:JSDF")
+//            .mvcMatchers("/api/private-scoped").hasAuthority("SCOPE_read:messages")
+            .and()
+                .oauth2ResourceServer().jwt().jwtAuthenticationConverter(jwtAuthenticationConverter())
+
+
     }
 }

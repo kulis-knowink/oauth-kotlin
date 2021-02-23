@@ -2,6 +2,7 @@ package com.example.oauthkotlin.controller
 
 import com.example.oauthkotlin.model.Message
 import org.springframework.http.MediaType
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
 
 import org.springframework.web.bind.annotation.CrossOrigin
