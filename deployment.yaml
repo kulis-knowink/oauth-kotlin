@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: poc-deployment
+  namespace: default
+  labels:
+    app: poc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: poc
+  template:
+    metadata:
+      labels:
+        app: poc
+    spec:
+      containers:
+        - name: poc
+          image: 538205699795.dkr.ecr.us-east-2.amazonaws.com/poc:latest
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: poc
+  namespace: default
+spec:
+  type: LoadBalancer
+  selector:
+    app: poc
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080

@@ -65,20 +65,11 @@ class SecurityConfig : WebSecurityConfigurerAdapter() {
 
 
         http.cors().and().authorizeRequests()
-            .mvcMatchers("/api/v1/agent-events/issues/**").hasAnyAuthority("PERMISSIONS_eventing:agent")
+            .mvcMatchers("/api/v1/agent-events/issues/**").hasAuthority("PERMISSIONS_eventing:agent")
+            .mvcMatchers("/api/v1/rover-events/issues/**").hasAuthority("PERMISSIONS_eventing:rover")
+            .mvcMatchers("/api/public").permitAll()
             .anyRequest().authenticated()
-
-
-
-
-//
-//            .mvcMatchers("/api/public").permitAll()
-//            .mvcMatchers("/api/private")
-//            .mvcMatchers("/api/v1/issues").hasAnyAuthority("SCOPE_ROEAD:JSDF")
-//            .mvcMatchers("/api/private-scoped").hasAuthority("SCOPE_read:messages")
             .and()
                 .oauth2ResourceServer().jwt().jwtAuthenticationConverter(jwtAuthenticationConverter())
-
-
     }
 }
