@@ -12,12 +12,18 @@ class Consumer {
 
     private val emitters = mutableListOf<SseEmitter>()
     private var consuming = false;
+    private var toBeRemoved = mutableSetOf<Int>()
 
     fun registerEmitter(emitter: SseEmitter): Int {
         if(!consuming){
             consuming = true
             consume();
         }
+        toBeRemoved.iterator().forEach { key ->
+            emitters.removeAt(key)
+        }
+
+
         emitters.add(emitter)
         return emitters.count()
     }
@@ -27,26 +33,36 @@ class Consumer {
     }
 
     fun consume(){
-        Thread {
-            var i = 0
-            instance.subscribe(listOf("issues"))
-            instance.use {
-                while(true){
-                    instance
-                        .poll(Duration.ofSeconds(1))
-                        .forEach { record ->
-                            val event = SseEmitter.event()
-                                .data(record.value())
-                                .name("issues")
-                            emitters.forEach { emitter ->
-                                event.id(i.toString())
-                                i++
-                                emitter.send(event)
+        try {
+            Thread {
+                var i = 0
+                instance.subscribe(listOf("issues"))
+                instance.use {
+                    while (true) {
+                        instance
+                            .poll(Duration.ofSeconds(1))
+                            .iterator().forEach { record ->
+                                val event = SseEmitter.event()
+                                    .data(record.value())
+                                    .name("issues")
+                                emitters.forEach { emitter ->
+
+                                    println(emitter.toString())
+                                    event.id(i.toString())
+                                    i++
+                                    try {
+                                        emitter.send(event)
+                                    } catch (exception: Exception) {
+//                                        toBeRemoved.add(emitters.indexOf(emitter))
+                                    }
+                                }
                             }
-                        }
+                    }
                 }
-            }
-        }.start()
+            }.start()
+        } catch(exception: Exception) {
+            consuming = false
+        }
     }
 
 

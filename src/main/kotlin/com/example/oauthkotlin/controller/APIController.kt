@@ -44,7 +44,7 @@ class APIController {
 
         val emitter = SseEmitter(0)
         val id = consumer.registerEmitter(emitter)
-        emitter.onError { consumer.unregisterEmitter(id) }
+//        emitter.onError { consumer.unregisterEmitter(id) }
 
         return emitter
     }
