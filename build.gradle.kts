@@ -16,6 +16,7 @@ repositories {
 }
 
 dependencies {
+	implementation("com.twilio.sdk:twilio:8.7.0")
 	implementation("org.apache.kafka:kafka-streams:2.1.0")
 	implementation("org.apache.kafka:kafka-clients:2.1.0")
 	implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")

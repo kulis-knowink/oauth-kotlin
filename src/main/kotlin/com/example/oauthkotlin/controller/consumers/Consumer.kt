@@ -1,5 +1,8 @@
 package com.example.oauthkotlin.controller.consumers
 
+import com.twilio.Twilio
+import com.twilio.rest.api.v2010.account.Message
+import com.twilio.rest.lookups.v1.PhoneNumber
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.springframework.stereotype.Component
@@ -10,61 +13,41 @@ import java.util.*
 @Component
 class Consumer {
 
-    private val emitters = mutableListOf<SseEmitter>()
-    private var consuming = false;
-    private var toBeRemoved = mutableSetOf<Int>()
+    val messages = mutableListOf<String>()
 
-    fun registerEmitter(emitter: SseEmitter): Int {
-        if(!consuming){
-            consuming = true
-            consume();
-        }
-        toBeRemoved.iterator().forEach { key ->
-            emitters.removeAt(key)
-        }
+    private var instance: KafkaConsumer<String, String > = createConsumer()
 
-
-        emitters.add(emitter)
-        return emitters.count()
-    }
-
-    fun unregisterEmitter(id: Int){
-        emitters.removeAt(id)
-    }
-
-    fun consume(){
-        try {
-            Thread {
-                var i = 0
-                instance.subscribe(listOf("issues"))
-                instance.use {
-                    while (true) {
-                        instance
-                            .poll(Duration.ofSeconds(1))
-                            .iterator().forEach { record ->
-                                val event = SseEmitter.event()
-                                    .data(record.value())
-                                    .name("issues")
-                                emitters.forEach { emitter ->
-
-                                    println(emitter.toString())
-                                    event.id(i.toString())
-                                    i++
-                                    try {
-                                        emitter.send(event)
-                                    } catch (exception: Exception) {
-//                                        toBeRemoved.add(emitters.indexOf(emitter))
-                                    }
-                                }
-                            }
-                    }
+    fun consumeKafka(){
+        Thread {
+            var i = 0
+            instance.subscribe(listOf("issues"))
+            instance.use {
+                while (true) {
+                    instance
+                        .poll(Duration.ofSeconds(1))
+                        .iterator().forEach { record ->
+                            println(record.value())
+                            messages.add(record.value())
+                        }
                 }
-            }.start()
-        } catch(exception: Exception) {
-            consuming = false
-        }
+            }
+        }.start()
+
     }
 
+    private fun sendToTwilio (message: String ) {
+        val accountSID = "123"
+        val authToken = "234"
+        Twilio.init(
+            accountSID,
+            authToken
+        )
+//        val message: Message = Message.creator(
+//            PhoneNumber("+15558675309"),
+//            PhoneNumber("+15017250604"),
+//            "This is the ship that made the Kessel Run in fourteen parsecs?"
+//        ).create()
+    }
 
     private fun createConsumer(): KafkaConsumer<String, String> {
         val props = Properties()
@@ -81,5 +64,9 @@ class Consumer {
         return KafkaConsumer<String, String>(props)
     }
 
-    private var instance: KafkaConsumer<String, String > = createConsumer()
+
+    init {
+        consumeKafka()
+    }
+
 }
