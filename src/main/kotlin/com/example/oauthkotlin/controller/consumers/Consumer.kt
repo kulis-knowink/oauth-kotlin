@@ -25,10 +25,7 @@ class Consumer {
                     instance
                         .poll(Duration.ofSeconds(1))
                         .iterator().forEach { record ->
-                            println(record.value())
-                            if(record.value() == "issue-resolved")
-                                sendToTwilio(record.value())
-                            messages.add(record.value())
+                            contentBasedRouter(record.value())
                         }
                 }
             }
@@ -50,7 +47,7 @@ class Consumer {
 
     private fun sendToTwilio (message: String ) {
         val accountSID = "ACa62659104c1748771f71a13c143dab8f"
-        val authToken = "53335286b66d89503a5ca3b2390783c0"
+        val authToken = "6733ba4b60e9be29674c13868883e5f7"
         val myPhoneNumber = "+15182558938"
 
         Twilio.init(
