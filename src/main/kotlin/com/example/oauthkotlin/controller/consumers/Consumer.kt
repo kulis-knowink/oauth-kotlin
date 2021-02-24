@@ -2,11 +2,10 @@ package com.example.oauthkotlin.controller.consumers
 
 import com.twilio.Twilio
 import com.twilio.rest.api.v2010.account.Message
-import com.twilio.rest.lookups.v1.PhoneNumber
+import com.twilio.type.PhoneNumber
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.springframework.stereotype.Component
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 import java.time.Duration
 import java.util.*
 
@@ -27,6 +26,8 @@ class Consumer {
                         .poll(Duration.ofSeconds(1))
                         .iterator().forEach { record ->
                             println(record.value())
+                            if(record.value() == "issue-resolved")
+                                sendToTwilio(record.value())
                             messages.add(record.value())
                         }
                 }
@@ -35,18 +36,36 @@ class Consumer {
 
     }
 
+    fun contentBasedRouter(message: String) {
+        when (message) {
+            "issue-resolved", "issue-opened", "rover-arrived", "rover-notified", "rover-unassigned" -> {
+                messages.add(message)
+                sendToTwilio(message)
+            }
+            "rover-assigned"  -> println(message)
+            "issue-prioritized"-> messages.add(message)
+
+        }
+    }
+
     private fun sendToTwilio (message: String ) {
-        val accountSID = "123"
-        val authToken = "234"
+        val accountSID = "ACa62659104c1748771f71a13c143dab8f"
+        val authToken = "53335286b66d89503a5ca3b2390783c0"
+        val myPhoneNumber = "+15182558938"
+
         Twilio.init(
             accountSID,
             authToken
         )
-//        val message: Message = Message.creator(
-//            PhoneNumber("+15558675309"),
-//            PhoneNumber("+15017250604"),
-//            "This is the ship that made the Kessel Run in fourteen parsecs?"
-//        ).create()
+
+        val toPhone = PhoneNumber("+16189230696")
+        val fromPhone = PhoneNumber(myPhoneNumber)
+
+        val message: Message = Message.creator(
+            toPhone,
+            fromPhone,
+            message
+        ).create()
     }
 
     private fun createConsumer(): KafkaConsumer<String, String> {
