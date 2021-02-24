@@ -45,38 +45,7 @@ class APIController {
         val emitter = SseEmitter(0)
         val id = consumer.registerEmitter(emitter)
         emitter.onError { consumer.unregisterEmitter(id) }
-//        val sseMvcExecutor = Executors.newSingleThreadExecutor()
-//        sseMvcExecutor.execute {
-//            try {
-//
-//                val consumer = createConsumer(brokers)
-//                consumer.subscribe(listOf(TOPIC))
-//
-//                var i = 0
-//                while(true) {
-//                    val records = consumer.poll(Duration.ofSeconds(1)).records("issues")
-//                    records.iterator().forEach {
-//                        val issue = it.value()
-//                        val key = it.key()
-//                        if(key.toInt() % 2 > 0){
-//                            println(key)
-//                            println(issue)
-//                            val event = SseEmitter.event()
-//                                .id(i.toString())
-//                                .data(issue)
-//                                .name("issues")
-//                            emitter.send(event)
-//                            i++
-//                        }
-//
-//
-//                    }
-//                }
-//
-//            } catch (ex: Exception) {
-//                emitter.completeWithError(ex)
-//            }
-//        }
+
         return emitter
     }
 }
