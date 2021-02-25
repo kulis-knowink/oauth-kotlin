@@ -23,21 +23,10 @@ import com.eatthepath.pushy.apns.util.ApnsPayloadBuilder
 import com.eatthepath.pushy.apns.PushNotificationResponse
 
 import com.eatthepath.pushy.apns.util.concurrent.PushNotificationFuture
+import org.springframework.core.io.ClassPathResource
 import java.time.Instant
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.CompletableFuture
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 @Component
@@ -82,7 +71,7 @@ class Consumer() {
          * ::: rover accepts ticket -> evented twillio message
          * ::: rover resolves issue -> agent notified, caller notified
          */
-        println("foo to the bar")
+
         when(message) {
             "rover-assigned" -> sendToAPN(message)
             "rover-notified" -> sendToSSE(message)
@@ -103,7 +92,7 @@ class Consumer() {
             .setApnsServer(ApnsClientBuilder.DEVELOPMENT_APNS_HOST)
             .setSigningKey(
                 ApnsSigningKey.loadFromPkcs8File(
-                    File("/Users/alanowens/Downloads/AuthKey_NF5S6P93TQ.p8"),
+                    ClassPathResource("AuthKey_NF5S6P93TQ.p8").file,
                     "E787C92P66", "NF5S6P93TQ"
                 )
             )
@@ -163,7 +152,7 @@ class Consumer() {
     private fun sendToTwilio (message: String ) {
         println("Sending to twilio $message")
         val accountSID = "ACa62659104c1748771f71a13c143dab8f"
-        val authToken = "6733ba4b60e9be29674c13868883e5f7"
+        val authToken = "d022e9d5dfc64d86ca1cc4dd03321321"
         val myPhoneNumber = "+15182558938"
 
         Twilio.init(
@@ -192,6 +181,7 @@ class Consumer() {
         props["key.deserializer"] = StringDeserializer::class.java
         props["value.deserializer"] = StringDeserializer::class.java
         props["group.id"] = "issue-processor"
+        props["auto.offset.reset"] = "earliest"
         return KafkaConsumer<String, String>(props)
     }
 
