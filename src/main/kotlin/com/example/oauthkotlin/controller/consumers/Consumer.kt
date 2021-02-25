@@ -8,6 +8,37 @@ import org.apache.kafka.common.serialization.StringDeserializer
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.util.*
+import com.eatthepath.pushy.apns.ApnsClientBuilder
+
+import com.eatthepath.pushy.apns.ApnsClient
+import com.eatthepath.pushy.apns.auth.ApnsSigningKey
+import java.io.File
+import com.eatthepath.pushy.apns.util.SimpleApnsPushNotification
+
+import com.eatthepath.pushy.apns.util.TokenUtil
+
+import com.eatthepath.pushy.apns.util.SimpleApnsPayloadBuilder
+
+import com.eatthepath.pushy.apns.util.ApnsPayloadBuilder
+import com.eatthepath.pushy.apns.PushNotificationResponse
+
+import com.eatthepath.pushy.apns.util.concurrent.PushNotificationFuture
+import java.time.Instant
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.CompletableFuture
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 @Component
 class Consumer() {
@@ -44,14 +75,16 @@ class Consumer() {
          * Agent reads kb -> no event sourced in poc
          * Agent resolves issue -> events to but filtered so no one gets messages (not in poc)
          * Agent prioritizes issue if not resolved -> evented  no messages
-         * Agent assigns rover -> evented no messages
+         * ::: Agent assigns rover -> evented message sent to rover
          * skipping caller registration for texting
          * ::: rover views notification -> agent notified
          * ::: rover rejects ticket -> agent notified
          * ::: rover accepts ticket -> evented twillio message
          * ::: rover resolves issue -> agent notified, caller notified
          */
+        println("foo to the bar")
         when(message) {
+            "rover-assigned" -> sendToAPN(message)
             "rover-notified" -> sendToSSE(message)
             "rover-unassigned" -> sendToSSE(message)
             "rover-accepted" -> sendToTwilio(message)
@@ -64,11 +97,67 @@ class Consumer() {
     }
 
     private fun sendToAPN(message: String){
-        println("Fake send to APN: $message")
+        println("REAL send to APN: $message")
+
+        val apnsClient = ApnsClientBuilder()
+            .setApnsServer(ApnsClientBuilder.DEVELOPMENT_APNS_HOST)
+            .setSigningKey(
+                ApnsSigningKey.loadFromPkcs8File(
+                    File("/Users/alanowens/Downloads/AuthKey_NF5S6P93TQ.p8"),
+                    "E787C92P66", "NF5S6P93TQ"
+                )
+            )
+            .build()
+
+        var pushNotification: SimpleApnsPushNotification = getPushNotificationStuff(message)
+
+        val sendNotificationFuture = apnsClient.sendNotification(pushNotification)
+
+        try {
+            val pushNotificationResponse = sendNotificationFuture.get()
+            if (pushNotificationResponse.isAccepted) {
+                println("Push notification accepted by APNs gateway.")
+            } else {
+                println(
+                    "Notification rejected by the APNs gateway: " +
+                            pushNotificationResponse.rejectionReason
+                )
+                pushNotificationResponse.tokenInvalidationTimestamp.ifPresent { timestamp: Instant ->
+                    println(
+                        "\t…and the token is invalid as of $timestamp"
+                    )
+                }
+            }
+        } catch (e: ExecutionException) {
+            System.err.println("Failed to send push notification.")
+            e.printStackTrace()
+        }
+
+        sendNotificationFuture.whenComplete { response: Any?, cause: Any ->
+            if (response != null) {
+                // Handle the push notification response as before from here.
+            } else {
+                // Something went wrong when trying to send the notification to the
+                // APNs server. Note that this is distinct from a rejection from
+                // the server, and indicates that something went wrong when actually
+                // sending the notification or waiting for a reply.
+                println("oh noes!")
+            }
+        }
+
+        val closeFuture = apnsClient.close()
     }
     private fun sendToSSE(message: String){
         println("Sending to SSE $message")
         messages.add(message)
+    }
+
+    private fun getPushNotificationStuff(message: String): SimpleApnsPushNotification {
+        val payloadBuilder: ApnsPayloadBuilder = SimpleApnsPayloadBuilder()
+        payloadBuilder.setAlertBody(message)
+        val payload = payloadBuilder.build()
+        val token = TokenUtil.sanitizeTokenString("f08ae4bc009b4c2632406b569d0be1c2e0b55b698d78311a71dbe54840b95cc2")
+        return SimpleApnsPushNotification(token, "test.TestAuthApp", payload)
     }
 
     private fun sendToTwilio (message: String ) {
