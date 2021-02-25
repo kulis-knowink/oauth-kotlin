@@ -10,11 +10,12 @@ import java.time.Duration
 import java.util.*
 
 @Component
-class Consumer {
+class Consumer() {
 
     val messages = mutableListOf<String>()
 
     private var instance: KafkaConsumer<String, String > = createConsumer()
+
 
     fun consumeKafka(){
         Thread {
@@ -23,8 +24,9 @@ class Consumer {
             instance.use {
                 while (true) {
                     instance
-                        .poll(Duration.ofSeconds(1))
+                        .poll(Duration.ofSeconds(3))
                         .iterator().forEach { record ->
+                            println("Found $record")
                             contentBasedRouter(record.value())
                         }
                 }
@@ -34,18 +36,43 @@ class Consumer {
     }
 
     fun contentBasedRouter(message: String) {
-        when (message) {
-            "issue-resolved", "issue-opened", "rover-arrived", "rover-notified", "rover-unassigned" -> {
-                messages.add(message)
+        /**
+         * Caller based issue flow
+         *
+         * Caller calls
+         * Agent opens ticket -> no notications
+         * Agent reads kb -> no event sourced in poc
+         * Agent resolves issue -> events to but filtered so no one gets messages (not in poc)
+         * Agent prioritizes issue if not resolved -> evented  no messages
+         * Agent assigns rover -> evented no messages
+         * skipping caller registration for texting
+         * ::: rover views notification -> agent notified
+         * ::: rover rejects ticket -> agent notified
+         * ::: rover accepts ticket -> evented twillio message
+         * ::: rover resolves issue -> agent notified, caller notified
+         */
+        when(message) {
+            "rover-notified" -> sendToSSE(message)
+            "rover-unassigned" -> sendToSSE(message)
+            "rover-accepted" -> sendToTwilio(message)
+            "issue-resolved" -> {
+                sendToSSE(message)
                 sendToTwilio(message)
             }
-            "rover-assigned"  -> println(message)
-            "issue-prioritized"-> messages.add(message)
-
+            else -> println("Event:: $message")
         }
     }
 
+    private fun sendToAPN(message: String){
+        println("Fake send to APN: $message")
+    }
+    private fun sendToSSE(message: String){
+        println("Sending to SSE $message")
+        messages.add(message)
+    }
+
     private fun sendToTwilio (message: String ) {
+        println("Sending to twilio $message")
         val accountSID = "ACa62659104c1748771f71a13c143dab8f"
         val authToken = "6733ba4b60e9be29674c13868883e5f7"
         val myPhoneNumber = "+15182558938"
@@ -76,7 +103,6 @@ class Consumer {
         props["key.deserializer"] = StringDeserializer::class.java
         props["value.deserializer"] = StringDeserializer::class.java
         props["group.id"] = "issue-processor"
-        props["auto.offset.reset"] = "latest"
         return KafkaConsumer<String, String>(props)
     }
 

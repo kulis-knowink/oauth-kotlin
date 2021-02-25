@@ -21,11 +21,6 @@ import javax.ws.rs.sse.Sse
 class APIController {
 
 
-
-    @Autowired
-    private lateinit var consumer: Consumer
-
-
     @GetMapping(value = ["/public"])
     fun publicEndpoint(): Message {
         return Message("All good. You DO NOT need to be authenticated to call /api/public.")
@@ -41,33 +36,4 @@ class APIController {
         return Message("All good. You can see this because you are Authenticated with a Token granted the 'read:messages' scope")
     }
 
-
-    @GetMapping("/v1/public/sse", produces = [MediaType.TEXT_EVENT_STREAM_VALUE])
-    fun streamSseMvc(): SseEmitter? {
-
-        val emitter = SseEmitter(0)
-        Thread {
-            try {
-                var offset = 0
-                while(true) {
-                    Thread.sleep(1000)
-                    val event = SseEmitter.event()
-                    val nextBatch = consumer.messages.slice(IntRange(offset, consumer.messages.count() - 1))
-                    println("count: " + nextBatch.count() + " offset: " + offset.toString())
-                    offset = offset + nextBatch.count()
-                    nextBatch.forEach { next ->
-                        event.data(next)
-                        event.name("issues")
-                        emitter.send(event)
-                    }
-                }
-
-            } catch (exception: Exception){
-                emitter.completeWithError(exception)
-            }
-        }.start()
-
-
-        return emitter
-    }
 }

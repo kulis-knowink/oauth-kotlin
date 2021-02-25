@@ -48,5 +48,6 @@ class Producer {
 
     fun send(id: Int, event: String) {
         instance.send(ProducerRecord(TOPIC, id.toString(), event))
+        instance.flush()
     }
 }
