@@ -1,3 +1,3 @@
 package com.example.oauthkotlin.model
 
-class Message(val message: String)
+data class Message(val message: String)

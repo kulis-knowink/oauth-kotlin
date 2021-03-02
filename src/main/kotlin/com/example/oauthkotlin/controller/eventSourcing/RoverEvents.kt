@@ -14,10 +14,7 @@ import java.util.*
     path=["api/v1/rover-events/issue"],
     produces = [MediaType.APPLICATION_JSON_VALUE]
 )
-class RoverEvents {
-
-    @Autowired
-    private lateinit var producer: com.example.oauthkotlin.controller.eventSourcing.Producer
+class RoverEvents(@Autowired val producer: Producer) {
 
     @PostMapping("/{id}/rover-notified-event")
     fun roverNotifiedEvent(@RequestBody issue: Issue, @PathVariable("id") id: Int): Issue {
