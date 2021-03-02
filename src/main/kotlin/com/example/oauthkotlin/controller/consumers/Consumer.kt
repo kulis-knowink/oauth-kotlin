@@ -39,7 +39,6 @@ class Consumer() {
 
     fun consumeKafka(){
         Thread {
-            var i = 0
             instance.subscribe(listOf("issues"))
             instance.use {
                 while (true) {
@@ -122,7 +121,7 @@ class Consumer() {
             e.printStackTrace()
         }
 
-        sendNotificationFuture.whenComplete { response: Any?, cause: Any ->
+        sendNotificationFuture.whenComplete { response: Any?, _: Any ->
             if (response != null) {
                 // Handle the push notification response as before from here.
             } else {
@@ -133,8 +132,6 @@ class Consumer() {
                 println("oh noes!")
             }
         }
-
-        val closeFuture = apnsClient.close()
     }
     private fun sendToSSE(message: String){
         println("Sending to SSE $message")
@@ -153,21 +150,14 @@ class Consumer() {
         println("Sending to twilio $message")
         val accountSID = "ACa62659104c1748771f71a13c143dab8f"
         val authToken = "d022e9d5dfc64d86ca1cc4dd03321321"
-        val myPhoneNumber = "+15182558938"
+//        val myPhoneNumber = "+15182558938"
 
         Twilio.init(
             accountSID,
             authToken
         )
-
-        val toPhone = PhoneNumber("+16189230696")
-        val fromPhone = PhoneNumber(myPhoneNumber)
-
-        val message: Message = Message.creator(
-            toPhone,
-            fromPhone,
-            message
-        ).create()
+//        val toPhone = PhoneNumber("+16189230696")
+//        val fromPhone = PhoneNumber(myPhoneNumber)
     }
 
     private fun createConsumer(): KafkaConsumer<String, String> {
